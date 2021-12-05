@@ -25,8 +25,9 @@ import dev.architectury.utils.Env;
 import dev.architectury.utils.NbtType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
+import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -81,7 +82,7 @@ public class FluidStackHooksImpl {
         if (tag == null || !tag.contains("id", NbtType.STRING)) {
             return FluidStack.empty();
         }
-    
+        
         var fluid = Registry.FLUID.get(new ResourceLocation(tag.getString("id")));
         if (fluid == null || fluid == Fluids.EMPTY) {
             return FluidStack.empty();
@@ -123,9 +124,7 @@ public class FluidStackHooksImpl {
     @Nullable
     public static TextureAtlasSprite getStillTexture(@NotNull FluidStack stack) {
         if (stack.getFluid() == Fluids.EMPTY) return null;
-        var handler = FluidRenderHandlerRegistry.INSTANCE.get(stack.getFluid());
-        if (handler == null) return null;
-        var sprites = handler.getFluidSprites(null, null, stack.getFluid().defaultFluidState());
+        var sprites = FluidVariantRendering.getSprites(FluidStackHooksFabric.toFabric(stack));
         if (sprites == null) return null;
         return sprites[0];
     }
@@ -134,9 +133,7 @@ public class FluidStackHooksImpl {
     @Nullable
     public static TextureAtlasSprite getStillTexture(@NotNull Fluid fluid) {
         if (fluid == Fluids.EMPTY) return null;
-        var handler = FluidRenderHandlerRegistry.INSTANCE.get(fluid);
-        if (handler == null) return null;
-        var sprites = handler.getFluidSprites(null, null, fluid.defaultFluidState());
+        var sprites = FluidVariantRendering.getSprites(FluidVariant.of(fluid));
         if (sprites == null) return null;
         return sprites[0];
     }
@@ -156,9 +153,7 @@ public class FluidStackHooksImpl {
     @Nullable
     public static TextureAtlasSprite getFlowingTexture(@NotNull FluidStack stack) {
         if (stack.getFluid() == Fluids.EMPTY) return null;
-        var handler = FluidRenderHandlerRegistry.INSTANCE.get(stack.getFluid());
-        if (handler == null) return null;
-        var sprites = handler.getFluidSprites(null, null, stack.getFluid().defaultFluidState());
+        var sprites = FluidVariantRendering.getSprites(FluidStackHooksFabric.toFabric(stack));
         if (sprites == null) return null;
         return sprites[1];
     }
@@ -167,9 +162,7 @@ public class FluidStackHooksImpl {
     @Nullable
     public static TextureAtlasSprite getFlowingTexture(@NotNull Fluid fluid) {
         if (fluid == Fluids.EMPTY) return null;
-        var handler = FluidRenderHandlerRegistry.INSTANCE.get(fluid);
-        if (handler == null) return null;
-        var sprites = handler.getFluidSprites(null, null, fluid.defaultFluidState());
+        var sprites = FluidVariantRendering.getSprites(FluidVariant.of(fluid));
         if (sprites == null) return null;
         return sprites[1];
     }
@@ -185,16 +178,30 @@ public class FluidStackHooksImpl {
     @Environment(EnvType.CLIENT)
     public static int getColor(@NotNull FluidStack stack) {
         if (stack.getFluid() == Fluids.EMPTY) return -1;
-        var handler = FluidRenderHandlerRegistry.INSTANCE.get(stack.getFluid());
-        if (handler == null) return -1;
-        return handler.getFluidColor(null, null, stack.getFluid().defaultFluidState());
+        return FluidVariantRendering.getColor(FluidStackHooksFabric.toFabric(stack));
+    }
+    
+    @Environment(EnvType.CLIENT)
+    public static int getColor(@NotNull FluidStack stack, @Nullable BlockAndTintGetter level, @Nullable BlockPos pos) {
+        if (stack.getFluid() == Fluids.EMPTY) return -1;
+        return FluidVariantRendering.getColor(FluidStackHooksFabric.toFabric(stack), level, pos);
     }
     
     @Environment(EnvType.CLIENT)
     public static int getColor(@NotNull Fluid fluid) {
         if (fluid == Fluids.EMPTY) return -1;
-        var handler = FluidRenderHandlerRegistry.INSTANCE.get(fluid);
-        if (handler == null) return -1;
-        return handler.getFluidColor(null, null, fluid.defaultFluidState());
+        return FluidVariantRendering.getColor(FluidVariant.of(fluid));
+    }
+    
+    @Environment(EnvType.CLIENT)
+    public static boolean shouldRenderFromTop(FluidStack stack) {
+        if (stack.getFluid() == Fluids.EMPTY) return false;
+        return FluidVariantRendering.fillsFromTop(FluidStackHooksFabric.toFabric(stack));
+    }
+    
+    @Environment(EnvType.CLIENT)
+    public static boolean shouldRenderFromTop(Fluid fluid) {
+        if (fluid == Fluids.EMPTY) return false;
+        return FluidVariantRendering.fillsFromTop(FluidVariant.of(fluid));
     }
 }
